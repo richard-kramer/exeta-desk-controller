@@ -29,12 +29,40 @@ Connect your cables from the D1 Mini to the controller PCB by soldering them acc
 
 ### Software installation
 
-**TODO: finalize documentation**
+Install `platformio` on your machine. This will be used to compile the code and upload it to your board.
 
-- dependencies
-- credentials
-- platformio
-  - usb permissions
+Copy `credentials.ini.example` to `credentials.ini`.
+
+```sh
+cp credentials.ini.example credentials.ini
+```
+
+Insert you WIFI credentials into the `credentials.ini`. The WIFI credentials are currently hardcoded at build time.
+
+```ini
+# credentials.ini
+
+[factory_settings]
+build_flags =
+    ; WiFi settings
+    -D WIFI_SSID=\"my_wifi_ssid\"
+    -D WIFI_PASSWORD=\"my_wifi_password\"
+```
+
+Run `platformio run -t upload` to build and upload the code to your board.
+
+Run `platformio device monitor` to monitor the serial output. You should see debugging information for what the
+controller is doing.
+
+#### USB Permissions
+
+If you are on Linux, you might not have access to the serial ports. To fix this, add yourself to the `dialout` group:
+
+```sh
+sudo usermod -aG dialout $USER
+```
+
+Also, refer to [this guide](https://docs.platformio.org/en/latest//faq.html#platformio-udev-rules).
 
 ## Schematics
 
