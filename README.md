@@ -64,6 +64,10 @@ sudo usermod -aG dialout $USER
 
 Also, refer to [this guide](https://docs.platformio.org/en/latest//faq.html#platformio-udev-rules).
 
+## Remote Control
+
+*TODO: add information about how to control the desk over the network*
+
 ## Schematics
 
 Schematics can be found in [`doc/schematics/`](doc/schematics).
