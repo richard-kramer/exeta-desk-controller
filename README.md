@@ -23,7 +23,7 @@ instructions are not responsible for possible damages.** I just want to share my
 Screw open your control unit (mine is a touch controlled one) and take out the PCB. Be careful to not accidentally cut a
 wire
 
-Connect your cables from the D1 Mini to the controller PCB by soldering them according to the schematic:
+Connect your cables from the D1 Mini to the controller PCB by soldering them according to the schematic. **Do not desolder anything**.
 
 ![D1 Mini to controller pcb connection](doc/schematics/exeta-to-d1mini.png)
 
