@@ -66,7 +66,130 @@ Also, refer to [this guide](https://docs.platformio.org/en/latest//faq.html#plat
 
 ## Remote Control
 
-*TODO: add information about how to control the desk over the network*
+To control the desk, send a JSON message via UDP unicast to the ip and port:
+
+```sh
+echo '{ "command": "setMode", "modeNumber": 1 }' | nc -w0 -u 192.168.0.59 4711
+echo '{ "command": "setMode", "modeNumber": 2 }' | nc -w0 -u 192.168.0.59 4711
+echo '{ "command": "setMode", "modeNumber": 3 }' | nc -w0 -u 192.168.0.59 4711
+echo '{ "command": "setHeight", "height": 100 }' | nc -w0 -u 192.168.0.59 4711
+```
+
+You can also read the height by listening to the UDP multicast on address `233.233.233.233` and port `4711`.
+Unfortunately I was unable to find a simple example, you can run on the command line. I'm using UDP multicast in Node
+Red like this (you can import below JSON into you own node red instance, if you have one):
+
+```json
+[
+  {
+    "id": "a1e6207d.92381",
+    "type": "subflow",
+    "name": "Exeta Desk",
+    "info": "",
+    "category": "",
+    "in": [{ "x": 100, "y": 80, "wires": [{ "id": "4c299c13.51f734" }] }],
+    "out": [{ "x": 660, "y": 140, "wires": [{ "id": "b4ffd684.b3d7d8", "port": 0 }] }],
+    "env": [
+      {
+        "name": "MULTICAST_IP",
+        "type": "str",
+        "value": "",
+        "ui": { "label": { "en-US": "Multicast IP" }, "type": "input", "opts": { "types": ["str", "env"] } }
+      },
+      {
+        "name": "MULTICAST_PORT",
+        "type": "num",
+        "value": "",
+        "ui": { "label": { "en-US": "Multicast Port" }, "type": "input", "opts": { "types": ["num", "env"] } }
+      },
+      {
+        "name": "UNICAST_IP",
+        "type": "str",
+        "value": "",
+        "ui": { "label": { "en-US": "Unicast IP" }, "type": "input", "opts": { "types": ["str", "env"] } }
+      },
+      {
+        "name": "UNICAST_PORT",
+        "type": "num",
+        "value": "",
+        "ui": { "label": { "en-US": "Unicast Port" }, "type": "input", "opts": { "types": ["num", "env"] } }
+      }
+    ],
+    "color": "#DDAA99",
+    "icon": "font-awesome/fa-arrows-v"
+  },
+  {
+    "id": "752be66.c6c5918",
+    "type": "udp in",
+    "z": "a1e6207d.92381",
+    "name": "",
+    "iface": "",
+    "port": "$(MULTICAST_PORT)",
+    "ipv": "udp4",
+    "multicast": "true",
+    "group": "$(MULTICAST_IP)",
+    "datatype": "utf8",
+    "x": 250,
+    "y": 140,
+    "wires": [["b4ffd684.b3d7d8"]]
+  },
+  {
+    "id": "f1997864.692468",
+    "type": "udp out",
+    "z": "a1e6207d.92381",
+    "name": "",
+    "addr": "$(UNICAST_IP)",
+    "iface": "",
+    "port": "$(UNICAST_PORT)",
+    "ipv": "udp4",
+    "outport": "",
+    "base64": false,
+    "multicast": "false",
+    "x": 520,
+    "y": 80,
+    "wires": []
+  },
+  {
+    "id": "b4ffd684.b3d7d8",
+    "type": "json",
+    "z": "a1e6207d.92381",
+    "name": "",
+    "property": "payload",
+    "action": "",
+    "pretty": false,
+    "x": 530,
+    "y": 140,
+    "wires": [[]]
+  },
+  {
+    "id": "4c299c13.51f734",
+    "type": "json",
+    "z": "a1e6207d.92381",
+    "name": "",
+    "property": "payload",
+    "action": "",
+    "pretty": false,
+    "x": 230,
+    "y": 80,
+    "wires": [["f1997864.692468"]]
+  },
+  {
+    "id": "a3b5694f.f7a248",
+    "type": "subflow:a1e6207d.92381",
+    "z": "3918b3ac.96cb6c",
+    "name": "",
+    "env": [
+      { "name": "MULTICAST_IP", "value": "233.233.233.233", "type": "str" },
+      { "name": "MULTICAST_PORT", "value": "4711", "type": "num" },
+      { "name": "UNICAST_IP", "value": "192.168.0.59", "type": "str" },
+      { "name": "UNICAST_PORT", "value": "4711", "type": "num" }
+    ],
+    "x": 790,
+    "y": 520,
+    "wires": [["9538a969.8d6178"]]
+  }
+]
+```
 
 ## Schematics
 
