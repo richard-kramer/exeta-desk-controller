@@ -1,0 +1,157 @@
+esphome:
+  name: desk
+  includes:
+    - deskcontrol/ExetaDeskState.h
+  # on_boot:
+  #   priority: -100
+  #   then:
+  #     - if:
+  #         condition:
+  #           not:
+  #             - lock.is_unlocked: input_lock
+  #         then:
+  #           - lock.unlock: input_lock
+  #           - delay: 3s
+  #     - output.turn_on: gpio_d2
+  #     - delay: 500ms
+  #     - output.turn_off: gpio_d2
+  #     - delay: 500ms
+  #     - output.turn_on: gpio_d3
+  #     - delay: 1s
+  #     - output.turn_off: gpio_d3
+
+esp8266:
+  board: d1_mini
+
+# Enable logging
+logger:
+  level: INFO
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: 'zGzsLZLQ1qLfViBWZ97dWXmb/iOs6zHvGTpP+9ZZM6k='
+
+ota:
+  password: '8059915d493c39bf3396d0faaab93a1c'
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+uart:
+  id: uart_bus
+  tx_pin: D6
+  rx_pin: D5
+  baud_rate: 9600
+
+output:
+  - platform: gpio
+    pin: D1
+    id: gpio_d1
+    inverted: true
+  - platform: gpio
+    pin: D2
+    id: gpio_d2
+    inverted: true
+  - platform: gpio
+    pin: D3
+    id: gpio_d3
+    inverted: true
+  - platform: gpio
+    pin: D4
+    id: gpio_d4
+    inverted: true
+
+custom_component:
+  - id: uart_state
+    lambda: |-
+      auto state_sensor = new ExetaDeskState(id(uart_bus));
+      App.register_component(state_sensor);
+      return {state_sensor};
+
+sensor:
+  - platform: template
+    lambda: |-
+      return {};
+    name: desk_height
+    id: height_sensor
+    unit_of_measurement: cm
+    accuracy_decimals: 1
+    device_class: distance
+    icon: mdi:arrow-expand-vertical
+    filters:
+      - filter_out: NaN
+
+lock:
+  - platform: template
+    name: desk_input
+    entity_category: config
+    id: input_lock
+    lambda: |-
+      return {};
+    unlock_action:
+      - lock.template.publish:
+          id: input_lock
+          state: UNLOCKING
+      - output.turn_on: gpio_d4
+      - delay: 3s
+      - output.turn_off: gpio_d4
+    lock_action:
+      - lock.template.publish:
+          id: input_lock
+          state: LOCKING
+      - output.turn_on: gpio_d4
+      - delay: 3s
+      - output.turn_off: gpio_d4
+
+button:
+  - platform: template
+    name: desk_mode_1
+    id: button_mode_1
+    icon: mdi:numeric-1-box
+    on_press:
+      - if:
+          condition:
+            not:
+              - lock.is_unlocked: input_lock
+          then:
+            - lock.unlock: input_lock
+            - delay: 3s
+      - output.turn_on: gpio_d1
+      - delay: 750ms
+      - output.turn_off: gpio_d1
+  - platform: template
+    name: desk_mode_2
+    id: button_mode_2
+    icon: mdi:numeric-2-box
+    on_press:
+      - if:
+          condition:
+            not:
+              - lock.is_unlocked: input_lock
+          then:
+            - lock.unlock: input_lock
+            - delay: 3s
+      - output.turn_on: gpio_d2
+      - output.turn_on: gpio_d3
+      - delay: 750ms
+      - output.turn_off: gpio_d2
+      - output.turn_off: gpio_d3
+  - platform: template
+    name: desk_mode_3
+    id: button_mode_3
+    icon: mdi:numeric-3-box
+    on_press:
+      - if:
+          condition:
+            not:
+              - lock.is_unlocked: input_lock
+          then:
+            - lock.unlock: input_lock
+            - delay: 3s
+      - output.turn_on: gpio_d1
+      - output.turn_on: gpio_d3
+      - delay: 750ms
+      - output.turn_off: gpio_d1
+      - output.turn_off: gpio_d3
