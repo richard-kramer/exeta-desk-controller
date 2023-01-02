@@ -5,6 +5,8 @@ Remote control your [Exeta motorized desk](https://exeta.de/) over the network.
 This works with an Arduino board reading the central control box signals and simulating button presses on the
 controller.
 
+For information on how to integrate this with homeassistant (and esphome), look at the [`esphome` branch](https://github.com/richard-kramer/exeta-desk-controller/tree/esphome).
+
 ## Compatibility
 
 This code was written for the control panel CT01-CH and attaches directly to this. I'm not sure, if or how this should
