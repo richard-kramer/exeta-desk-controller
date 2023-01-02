@@ -1,11 +1,9 @@
-# Exeta Desk Controller
+# Exeta Desk Controller (esphome)
 
-Remote control your [Exeta motorized desk](https://exeta.de/) over the network.
+Remote control your [Exeta motorized desk](https://exeta.de/) over the network using esphome.
 
 This works with an Arduino board reading the central control box signals and simulating button presses on the
 controller.
-
-For information on how to integrate this with homeassistant (and esphome), look at the [`esphome` branch](https://github.com/richard-kramer/exeta-desk-controller/tree/esphome).
 
 ## Compatibility
 
@@ -25,172 +23,181 @@ instructions are not responsible for possible damages.** I just want to share my
 Screw open your control unit (mine is a touch controlled one) and take out the PCB. Be careful to not accidentally cut a
 wire
 
-Connect your cables from the D1 Mini to the controller PCB by soldering them according to the schematic. **Do not desolder anything**.
+Connect your cables from the D1 Mini to the controller PCB by soldering them according to the schematic. **Do not
+desolder anything**.
 
 ![D1 Mini to controller pcb connection](doc/schematics/exeta-to-d1mini.png)
 
 ### Software installation
 
-Install `platformio` on your machine. This will be used to compile the code and upload it to your board.
+Copy the files from [`esphome`](esphome/) into your homeassistant `/config/esphome` directory. The configuration uses
+the keys `wifi_ssid` and `wifi_password`, so make sure to add them to your `secrets.yaml`.
 
-Copy `credentials.ini.example` to `credentials.ini`.
-
-```sh
-cp credentials.ini.example credentials.ini
-```
-
-Insert you WIFI credentials into the `credentials.ini`. The WIFI credentials are currently hardcoded at build time.
-
-```ini
-# credentials.ini
-
-[factory_settings]
-build_flags =
-    ; WiFi settings
-    -D WIFI_SSID=\"my_wifi_ssid\"
-    -D WIFI_PASSWORD=\"my_wifi_password\"
-```
-
-Run `platformio run -t upload` to build and upload the code to your board.
-
-Run `platformio device monitor` to monitor the serial output. You should see debugging information for what the
-controller is doing.
-
-#### USB Permissions
-
-If you are on Linux, you might not have access to the serial ports. To fix this, add yourself to the `dialout` group:
-
-```sh
-sudo usermod -aG dialout $USER
-```
-
-Also, refer to [this guide](https://docs.platformio.org/en/latest//faq.html#platformio-udev-rules).
+Install the code via esphome in your Homeassistant instance and import the device.
 
 ## Remote Control
 
-To control the desk, send a JSON message via UDP unicast to the ip and port:
+Control your desk using the entities created by your esphome integration for the new device.
 
-```sh
-echo '{ "command": "setMode", "modeNumber": 1 }' | nc -w0 -u 192.168.0.59 4711
-echo '{ "command": "setMode", "modeNumber": 2 }' | nc -w0 -u 192.168.0.59 4711
-echo '{ "command": "setMode", "modeNumber": 3 }' | nc -w0 -u 192.168.0.59 4711
-echo '{ "command": "setHeight", "height": 100 }' | nc -w0 -u 192.168.0.59 4711
+### Automations
+
+I use these automations to force me to stand up every so often.
+
+```yaml
+# automations.yml
+
+# ...
+
+- id: '1666937325981'
+  alias: '[Desk] auto change height'
+  description: Switches the desk between sitting and standing every 30 minutes when the desk automation is enabled
+  trigger:
+    - platform: state
+      entity_id:
+        - sensor.desk_height
+      for:
+        hours: 0
+        minutes: 30
+        seconds: 0
+      id: height_change
+    - platform: state
+      entity_id:
+        - automation.desk_auto_change_height
+      id: automation_changed
+      for:
+        hours: 0
+        minutes: 30
+        seconds: 0
+  condition:
+    - condition: or
+      conditions:
+        - condition: trigger
+          id: height_change
+        - condition: and
+          conditions:
+            - condition: trigger
+              id: automation_changed
+            - condition: template
+              value_template:
+                '{{ ((as_timestamp(now())-as_timestamp(states.sensor.desk_height.last_updated)) / 60) > 30 }}'
+              enabled: true
+  action:
+    - if:
+        - condition: numeric_state
+          entity_id: sensor.desk_height
+          above: 80
+      then:
+        - service: script.desk_move_down
+          data: {}
+      else:
+        - service: script.desk_move_up
+          data: {}
+  mode: single
+- id: '1666937511205'
+  alias: '[Desk] toggle automation from pc state'
+  description: Turn on desk automation when PC is turned on and vice versa
+  trigger:
+    - platform: state
+      entity_id:
+        - device_tracker.pc
+      to:
+  condition: []
+  action:
+    - if:
+        - condition: state
+          entity_id: device_tracker.pc
+          state: home
+      then:
+        - service: input_boolean.turn_on
+          data: {}
+          target:
+            entity_id: automation.desk_auto_change_height
+      else:
+        - service: input_boolean.turn_off
+          data: {}
+          target:
+            entity_id: automation.desk_auto_change_height
+  mode: single
+# ...
 ```
 
-You can also read the height by listening to the UDP multicast on address `233.233.233.233` and port `4711`.
-Unfortunately I was unable to find a simple example, you can run on the command line. I'm using UDP multicast in Node
-Red like this (you can import below JSON into you own node red instance, if you have one):
+The last automation uses an entity `device_tracker.pc` which tracks, if my PC is on (in the network) or not. Replace
+this with your own device tracker or delete the automation if you don't want this.
 
-```json
-[
-  {
-    "id": "a1e6207d.92381",
-    "type": "subflow",
-    "name": "Exeta Desk",
-    "info": "",
-    "category": "",
-    "in": [{ "x": 100, "y": 80, "wires": [{ "id": "4c299c13.51f734" }] }],
-    "out": [{ "x": 660, "y": 140, "wires": [{ "id": "b4ffd684.b3d7d8", "port": 0 }] }],
-    "env": [
-      {
-        "name": "MULTICAST_IP",
-        "type": "str",
-        "value": "",
-        "ui": { "label": { "en-US": "Multicast IP" }, "type": "input", "opts": { "types": ["str", "env"] } }
-      },
-      {
-        "name": "MULTICAST_PORT",
-        "type": "num",
-        "value": "",
-        "ui": { "label": { "en-US": "Multicast Port" }, "type": "input", "opts": { "types": ["num", "env"] } }
-      },
-      {
-        "name": "UNICAST_IP",
-        "type": "str",
-        "value": "",
-        "ui": { "label": { "en-US": "Unicast IP" }, "type": "input", "opts": { "types": ["str", "env"] } }
-      },
-      {
-        "name": "UNICAST_PORT",
-        "type": "num",
-        "value": "",
-        "ui": { "label": { "en-US": "Unicast Port" }, "type": "input", "opts": { "types": ["num", "env"] } }
-      }
-    ],
-    "color": "#DDAA99",
-    "icon": "font-awesome/fa-arrows-v"
-  },
-  {
-    "id": "752be66.c6c5918",
-    "type": "udp in",
-    "z": "a1e6207d.92381",
-    "name": "",
-    "iface": "",
-    "port": "$(MULTICAST_PORT)",
-    "ipv": "udp4",
-    "multicast": "true",
-    "group": "$(MULTICAST_IP)",
-    "datatype": "utf8",
-    "x": 250,
-    "y": 140,
-    "wires": [["b4ffd684.b3d7d8"]]
-  },
-  {
-    "id": "f1997864.692468",
-    "type": "udp out",
-    "z": "a1e6207d.92381",
-    "name": "",
-    "addr": "$(UNICAST_IP)",
-    "iface": "",
-    "port": "$(UNICAST_PORT)",
-    "ipv": "udp4",
-    "outport": "",
-    "base64": false,
-    "multicast": "false",
-    "x": 520,
-    "y": 80,
-    "wires": []
-  },
-  {
-    "id": "b4ffd684.b3d7d8",
-    "type": "json",
-    "z": "a1e6207d.92381",
-    "name": "",
-    "property": "payload",
-    "action": "",
-    "pretty": false,
-    "x": 530,
-    "y": 140,
-    "wires": [[]]
-  },
-  {
-    "id": "4c299c13.51f734",
-    "type": "json",
-    "z": "a1e6207d.92381",
-    "name": "",
-    "property": "payload",
-    "action": "",
-    "pretty": false,
-    "x": 230,
-    "y": 80,
-    "wires": [["f1997864.692468"]]
-  },
-  {
-    "id": "a3b5694f.f7a248",
-    "type": "subflow:a1e6207d.92381",
-    "z": "3918b3ac.96cb6c",
-    "name": "",
-    "env": [
-      { "name": "MULTICAST_IP", "value": "233.233.233.233", "type": "str" },
-      { "name": "MULTICAST_PORT", "value": "4711", "type": "num" },
-      { "name": "UNICAST_IP", "value": "192.168.0.59", "type": "str" },
-      { "name": "UNICAST_PORT", "value": "4711", "type": "num" }
-    ],
-    "x": 790,
-    "y": 520,
-    "wires": [["9538a969.8d6178"]]
-  }
-]
+### Lovelace
+
+I use this card in my dashboard, to manually control the desk and automations, as well as viewing its state and history.
+
+This card uses the [vertical-stack-in-card](https://github.com/ofekashery/vertical-stack-in-card) and
+[mini-graph-card](https://github.com/kalkih/mini-graph-card) custom components.
+
+![Desk control lovelace card](doc/img/card.png)
+
+```yaml
+# card.yaml
+
+type: custom:vertical-stack-in-card
+cards:
+  - type: entities
+    show_header_toggle: false
+    entities:
+      - entity: button.desk_mode_1
+        name: Height 1
+      - entity: button.desk_mode_2
+        name: Height 2
+      - entity: button.desk_mode_3
+        name: Height 3
+      - entity: lock.desk_input
+        name: Touch Lock
+      - type: custom:secondaryinfo-entity-row
+        entity: automation.desk_auto_change_height
+        name: Auto-Height
+        secondary_info: |-
+          last change {%
+            set last_relevant_change = [
+              as_timestamp(states.sensor.desk_height.last_changed),
+              as_timestamp(states.automation.desk_auto_change_height.last_changed)
+            ] | max
+          -%} {{
+            (
+              (((as_timestamp(now())-as_timestamp(states.sensor.desk_height.last_updated)) / 60) > 30 and (last_relevant_change | as_datetime)) or states.sensor.desk_height.last_updated
+            ) | relative_time
+          }} ago
+      - entity: automation.desk_toggle_automation_from_pc_state
+        name: Toggl auto-height with PC
+    state_color: true
+    title: Desk
+  - type: custom:mini-graph-card
+    entities:
+      - entity: sensor.desk_height
+        name: Height
+      - entity: automation.desk_auto_change_height
+        y_axis: secondary
+        show_line: false
+        show_points: false
+        show_state: false
+        name: Auto-Height
+      - entity: device_tracker.pc
+        y_axis: secondary
+        show_line: false
+        show_points: false
+        show_state: false
+    points_per_hour: 60
+    hour24: true
+    name: Height
+    height: 120
+    line_width: 2
+    lower_bound: 62
+    upper_bound: 128
+    state_map:
+      - value: 'not_home'
+        label: 'Off'
+      - value: 'off'
+        label: 'Off'
+      - value: 'home'
+        label: 'On'
+      - value: 'on'
+        label: 'On'
 ```
 
 ## Schematics
