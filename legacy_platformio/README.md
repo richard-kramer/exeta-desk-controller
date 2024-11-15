@@ -1,16 +1,18 @@
 # Exeta Desk Controller
 
-Remote control your [Exeta motorized desk](https://exeta.de/) over the network.
+Remote control your [Exeta motorized desk](https://exeta.de/) (in my case an
+[ergoPRO 2019 Edition](https://amzn.eu/d/6zWSsSo)) over the network.
 
 This works with an Arduino board reading the central control box signals and simulating button presses on the
 controller.
 
-For information on how to integrate this with homeassistant (and esphome), look at the [`esphome` branch](https://github.com/richard-kramer/exeta-desk-controller/tree/esphome).
+For information on how to integrate this with homeassistant (and esphome), look at the
+[`esphome` branch](https://github.com/richard-kramer/exeta-desk-controller/tree/esphome).
 
 ## Compatibility
 
 This code was written for the control panel CT01-CH and attaches directly to this. I'm not sure, if or how this should
-be adapted to work with newer exeta desks/controllers or different brands of motorized desks.
+be adapted to work with other exeta desks/controllers or different brands of motorized desks.
 
 It was also developed to be installed on a [WEMOS D1 Mini](https://www.az-delivery.de/products/d1-mini). Compatibility
 with other boards is untested.
@@ -25,9 +27,10 @@ instructions are not responsible for possible damages.** I just want to share my
 Screw open your control unit (mine is a touch controlled one) and take out the PCB. Be careful to not accidentally cut a
 wire
 
-Connect your cables from the D1 Mini to the controller PCB by soldering them according to the schematic. **Do not desolder anything**.
+Connect your cables from the D1 Mini to the controller PCB by soldering them according to the schematic. **Do not
+desolder anything**.
 
-![D1 Mini to controller pcb connection](doc/schematics/exeta-to-d1mini.png)
+![D1 Mini to controller pcb connection](../doc/schematics/exeta-to-d1mini.png)
 
 ### Software installation
 
@@ -64,7 +67,7 @@ If you are on Linux, you might not have access to the serial ports. To fix this,
 sudo usermod -aG dialout $USER
 ```
 
-Also, refer to [this guide](https://docs.platformio.org/en/latest//faq.html#platformio-udev-rules).
+Also, refer to [this guide](https://docs.platformio.org/en/latest/faq.html#platformio-udev-rules).
 
 ## Remote Control
 
@@ -195,9 +198,9 @@ Red like this (you can import below JSON into you own node red instance, if you 
 
 ## Schematics
 
-Schematics can be found in [`doc/schematics/`](doc/schematics).
+Schematics can be found in [`../doc/schematics/`](../doc/schematics).
 
-I also took a few [photos of my own controller](doc/photos) and the connected D1 Mini. Unfortunately I has the great
+I also took a few [photos of my own controller](../doc/photos) and the connected D1 Mini. Unfortunately I has the great
 idea to secure my soldered wires with hot glue, so it is really hard to see, whats soldered where.
 
 I numbered the wires using my own method (nothing, the manufacturer intended or is using in a similar way). Starting
