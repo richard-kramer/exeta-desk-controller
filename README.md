@@ -44,6 +44,21 @@ Install the code via esphome in your Homeassistant instance and import the devic
 
 Control your desk using the entities created by your esphome integration for the new device.
 
+Controlling the height via the `cover` and `number` is not very precise, because it essentially emulates holding the
+up/down buttons until the display shows the desired height. But because the desk doesn't just stop dead, it cannot move
+to the **exact** height. I tried to mitigate this a bit by stopping early, but because of varying move speed this still
+only lands approximately at the target position.
+
+Also, the **STOP** button of the cover really only works, if the desk moves by controlling it via the cover or number
+input. When pressing one of the position memory keys the only way to stop the desk is by pressing on of those again. The
+actual controller does not have a dedicated **STOP** button, so there is nothing that could be pressed, but only to
+release while emulating a press on Up/Down.
+
+There may be edge cases, where pressing buttons while the desk is performing another task might result in unexpected
+behaviour or altering what the controls do because of unexpected output state. I tried to mitigate this as much as
+possible by resetting all output channels before performing a new action. But I cannot guarantee mashing buttons or
+rapidly firing entity actions won't ever break something.
+
 ### Automations
 
 I use these automations to force me to stand up every so often.
@@ -134,7 +149,8 @@ Replace this with your own device tracker or delete the automation if you don't 
 I use this card in my dashboard, to manually control the desk and automations, as well as viewing its state and history.
 
 This card uses the [vertical-stack-in-card](https://github.com/ofekashery/vertical-stack-in-card),
-[secondaryinfo-entity-row](https://github.com/custom-cards/secondaryinfo-entity-row) and
+[secondaryinfo-entity-row](https://github.com/custom-cards/secondaryinfo-entity-row),
+[timer-bar-card](https://github.com/rianadon/timer-bar-card) and
 [mini-graph-card](https://github.com/kalkih/mini-graph-card) custom components.
 
 ![Desk control lovelace card](./doc/img/card.png)
@@ -148,41 +164,44 @@ cards:
     show_header_toggle: false
     entities:
       - entity: button.desk_mode_1
-        name: Height 1
+        name: Button 1
+        icon: mdi:numeric-1-box
       - entity: button.desk_mode_2
-        name: Height 2
+        name: Button 2
+        icon: mdi:numeric-2-box
       - entity: button.desk_mode_3
-        name: Height 3
+        name: Button 3
+        icon: mdi:numeric-3-box
+      - entity: cover.desk
+      - entity: number.desk_height
+        name: Height
+        icon: mdi:arrow-expand-vertical
       - entity: lock.desk_input
         name: Touch Lock
-      - type: custom:secondaryinfo-entity-row
-        entity: automation.desk_auto_change_height
-        name: Auto-Height
-        secondary_info: |-
-          last change {%
-            set last_relevant_change = [
-              as_timestamp(states.sensor.desk_height.last_changed),
-              as_timestamp(states.automation.desk_auto_change_height.last_changed)
-            ] | max
-          -%} {{
-            (
-              (((as_timestamp(now())-as_timestamp(states.sensor.desk_height.last_updated)) / 60) > 30 and (last_relevant_change | as_datetime)) or states.sensor.desk_height.last_updated
-            ) | relative_time
-          }} ago
+      - entity: automation.desk_auto_change_height
+        name: Auto change height
+      - type: conditional
+        conditions:
+          - condition: state
+            entity: automation.desk_auto_change_height
+            state: 'on'
+        row:
+          type: custom:timer-bar-card
+          entity: timer.next_desk_height_change
+          name: Next height change
       - entity: automation.desk_toggle_automation_from_pc_state
         name: Toggle auto-height with PC
     state_color: true
-    title: Desk
   - type: custom:mini-graph-card
     entities:
       - entity: sensor.desk_height
         name: Height
       - entity: automation.desk_auto_change_height
+        name: Auto-Height
         y_axis: secondary
         show_line: false
         show_points: false
         show_state: false
-        name: Auto-Height
       - entity: device_tracker.pc
         y_axis: secondary
         show_line: false
@@ -196,11 +215,11 @@ cards:
     lower_bound: 62
     upper_bound: 128
     state_map:
-      - value: 'not_home'
+      - value: not_home
         label: 'Off'
       - value: 'off'
         label: 'Off'
-      - value: 'home'
+      - value: home
         label: 'On'
       - value: 'on'
         label: 'On'

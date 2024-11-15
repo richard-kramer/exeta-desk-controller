@@ -2,23 +2,6 @@ esphome:
   name: desk
   includes:
     - deskcontrol/ExetaDeskState.h
-  # on_boot:
-  #   priority: -100
-  #   then:
-  #     - if:
-  #         condition:
-  #           not:
-  #             - lock.is_unlocked: input_lock
-  #         then:
-  #           - lock.unlock: input_lock
-  #           - delay: 3s
-  #     - output.turn_on: gpio_d2
-  #     - delay: 500ms
-  #     - output.turn_off: gpio_d2
-  #     - delay: 500ms
-  #     - output.turn_on: gpio_d3
-  #     - delay: 1s
-  #     - output.turn_off: gpio_d3
 
 esp8266:
   board: d1_mini
@@ -30,14 +13,21 @@ logger:
 # Enable Home Assistant API
 api:
   encryption:
-    key: 'zGzsLZLQ1qLfViBWZ97dWXmb/iOs6zHvGTpP+9ZZM6k='
+    key: 'secure_key' # TODO: replace key
 
 ota:
-  password: '8059915d493c39bf3396d0faaab93a1c'
+  platform: esphome
+  password: 'secure_password' # TODO: replace password
 
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
+
+substitutions:
+  min_height: '62'
+  max_height: '128'
+  moving_up_stop_delta: '0.5'
+  moving_down_stop_delta: '0.7'
 
 uart:
   id: uart_bus
@@ -63,6 +53,12 @@ output:
     id: gpio_d4
     inverted: true
 
+globals:
+  - id: desk_height
+    type: float
+    restore_value: true
+    initial_value: '62'
+
 custom_component:
   - id: uart_state
     lambda: |-
@@ -70,10 +66,18 @@ custom_component:
       App.register_component(state_sensor);
       return {state_sensor};
 
+script:
+  - id: unset_all
+    then:
+      - output.turn_off: gpio_d1
+      - output.turn_off: gpio_d2
+      - output.turn_off: gpio_d3
+      - output.turn_off: gpio_d4
+
 sensor:
   - platform: template
-    lambda: |-
-      return {};
+    lambda: !lambda |-
+      return id(desk_height);
     name: desk_height
     id: height_sensor
     unit_of_measurement: cm
@@ -82,6 +86,102 @@ sensor:
     icon: mdi:arrow-expand-vertical
     filters:
       - filter_out: NaN
+    on_value:
+      then:
+        - cover.template.publish:
+            id: desk_cover
+            position: !lambda |-
+              float position = (float(x) - float(${min_height})) / (float(${max_height}) - float(${min_height}));
+              return position;
+        - component.update: height_input
+
+cover:
+  - platform: template
+    id: 'desk_cover'
+    icon: mdi:desk
+    name: 'Desk'
+    device_class: blind # makes it easier to integrate with Google/Alexa
+    has_position: true
+    position_action:
+      - cover.stop: desk_cover
+      - if:
+          condition:
+            - lambda: !lambda |-
+                return pos > id(desk_cover).position;
+          then:
+            - cover.open: desk_cover
+            - wait_until:
+                lambda: |-
+                  return id(desk_cover).position >= pos;
+            - script.execute:
+                id: unset_all
+          else:
+            - cover.close: desk_cover
+            - wait_until:
+                lambda: |-
+                  return id(desk_cover).position <= pos;
+            - script.execute:
+                id: unset_all
+    stop_action:
+      - script.execute:
+          id: unset_all
+    open_action:
+      - if:
+          condition:
+            not:
+              - lock.is_unlocked: input_lock
+          then:
+            - lock.unlock: input_lock
+            - delay: 3s
+      - script.execute:
+          id: unset_all
+      - delay: 750ms
+      - output.turn_on: gpio_d2
+    close_action:
+      - if:
+          condition:
+            not:
+              - lock.is_unlocked: input_lock
+          then:
+            - lock.unlock: input_lock
+            - delay: 3s
+      - script.execute:
+          id: unset_all
+      - delay: 750ms
+      - output.turn_on: gpio_d3
+    optimistic: false
+
+number:
+  - platform: template
+    lambda: !lambda |-
+      return id(height_sensor).state;
+    name: desk_height
+    id: height_input
+    unit_of_measurement: cm
+    mode: box
+    step: 0.1
+    min_value: ${min_height}
+    max_value: ${max_height}
+    device_class: 'distance'
+    set_action:
+      - if:
+          condition:
+            - lambda: !lambda |-
+                return x > id(height_sensor).state;
+          then:
+            - cover.open: desk_cover
+            - wait_until:
+                lambda: |-
+                  return id(height_sensor).state  >= x - ${moving_up_stop_delta};
+            - script.execute:
+                id: unset_all
+          else:
+            - cover.close: desk_cover
+            - wait_until:
+                lambda: |-
+                  return id(height_sensor).state <= x + ${moving_down_stop_delta};
+            - script.execute:
+                id: unset_all
 
 lock:
   - platform: template
@@ -94,16 +194,22 @@ lock:
       - lock.template.publish:
           id: input_lock
           state: UNLOCKING
+      - script.execute:
+          id: unset_all
       - output.turn_on: gpio_d4
       - delay: 3s
-      - output.turn_off: gpio_d4
+      - script.execute:
+          id: unset_all
     lock_action:
       - lock.template.publish:
           id: input_lock
           state: LOCKING
+      - script.execute:
+          id: unset_all
       - output.turn_on: gpio_d4
       - delay: 3s
-      - output.turn_off: gpio_d4
+      - script.execute:
+          id: unset_all
 
 button:
   - platform: template
@@ -120,7 +226,8 @@ button:
             - delay: 3s
       - output.turn_on: gpio_d1
       - delay: 750ms
-      - output.turn_off: gpio_d1
+      - script.execute:
+          id: unset_all
   - platform: template
     name: desk_mode_2
     id: button_mode_2
@@ -136,8 +243,8 @@ button:
       - output.turn_on: gpio_d2
       - output.turn_on: gpio_d3
       - delay: 750ms
-      - output.turn_off: gpio_d2
-      - output.turn_off: gpio_d3
+      - script.execute:
+          id: unset_all
   - platform: template
     name: desk_mode_3
     id: button_mode_3
@@ -153,5 +260,5 @@ button:
       - output.turn_on: gpio_d1
       - output.turn_on: gpio_d3
       - delay: 750ms
-      - output.turn_off: gpio_d1
-      - output.turn_off: gpio_d3
+      - script.execute:
+          id: unset_all
