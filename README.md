@@ -230,7 +230,9 @@ cards:
 Schematics can be found in [`doc/schematics/`](./doc/schematics).
 
 I also took a few [photos of my own controller](./doc/photos) and the connected D1 Mini. Unfortunately I had the great
-idea to secure my soldered wires with hot glue, so it is really hard to see whats soldered where.
+idea to secure my soldered wires with hot glue, so it is really hard to see whats soldered where. Also, I wired the RX
+(Pin 4) to D5 instead of D6 on my own controller without realising it when creating the diagrams. But it's only
+important, the Pin on the ESP is set as `rx_pin` in [`desk.yaml`](./esphome/desk.yaml).
 
 I numbered the wires using my own method (nothing, the manufacturer intended or is using in a similar way). Starting
 from the power pins, I simply counted from right to left. I'm using this numbering system in this documentation as well

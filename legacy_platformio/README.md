@@ -198,7 +198,9 @@ Red like this (you can import below JSON into you own node red instance, if you 
 Schematics can be found in [`../doc/schematics/`](../doc/schematics).
 
 I also took a few [photos of my own controller](../doc/photos) and the connected D1 Mini. Unfortunately I has the great
-idea to secure my soldered wires with hot glue, so it is really hard to see, whats soldered where.
+idea to secure my soldered wires with hot glue, so it is really hard to see, whats soldered where. Also, I wired the RX
+(Pin 4) to D5 instead of D6 on my own controller. But it's only important, the Pin on the ESP is set as RX-Pin for the
+`SoftwareSerial controllerSerial` (first parameter) in [`main.cpp`](./src/main.cpp).
 
 I numbered the wires using my own method (nothing, the manufacturer intended or is using in a similar way). Starting
 from the power pins, I simply counted from right to left. I'm using this numbering system in this documentation as well
@@ -220,9 +222,9 @@ The controller sends signals (`HIGH`) over the wires 5 to 8 on button press acco
 These pins are connected to the D1 Mini as `OUTPUT`. By setting them to `HIGH`, the board simulates a button press on
 the controller.
 
-Additionally, it receives SoftwareSerial (UART?) packages from the central control box via Pin 4 (`SoftwareSerial` RX)
-with a baud rate of `9600`. TX is unused. To use this information on the D1 mini, the RX wire is connected as `INPUT` on
-the D1 Mini and configured as `SoftwareSerial` RX pin.
+Additionally, it receives UART packages from the central control box via Pin 4 (`SoftwareSerial` RX) with a baud rate of
+`9600`. TX is unused. To use this information on the D1 mini, the RX wire is connected as `INPUT` on the D1 Mini and
+configured as `SoftwareSerial` RX pin.
 
 Pin 1 and 2 are used for 5V power.
 

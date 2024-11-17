@@ -35,10 +35,10 @@ const int d1 = 5;  // PIN 5
 const int d2 = 4;  // PIN 6
 const int d3 = 0;  // PIN 7
 const int d4 = 2;  // PIN 8
-const int d5 = 14; // PIN 4
-const int d6 = 15; // Serial-TX; unused
+const int d5 = 14; // Serial-TX; unused
+const int d6 = 15; // PIN 4
 
-SoftwareSerial controllerSerial(d5, d6); // RX, TX
+SoftwareSerial controllerSerial(d6, d5); // RX, TX
 
 const int buttonM[] = {d4};
 const int button1[] = {d1};
@@ -83,11 +83,11 @@ void monitorController()
     }
     else
     {
-      //Serial.print(buffer[0]);
-      //Serial.print(" ");
-      //Serial.print(buffer[1]);
-      //Serial.print(" ");
-      //Serial.println(buffer[2]);
+      // Serial.print(buffer[0]);
+      // Serial.print(" ");
+      // Serial.print(buffer[1]);
+      // Serial.print(" ");
+      // Serial.println(buffer[2]);
 
       bool oldLocked = locked;
       float oldHeight = height;
@@ -310,17 +310,17 @@ void readCommandsUdp()
     else if (_destIP[3] == 255)
       recvmode = 2;
 
-         Serial.println("Content " + String(len) + " bytes: " + String(recv_Packet));
+    Serial.println("Content " + String(len) + " bytes: " + String(recv_Packet));
 
-         StaticJsonDocument<256> receiveDoc;
-         DeserializationError error = deserializeJson(receiveDoc, recv_Packet);
+    StaticJsonDocument<256> receiveDoc;
+    DeserializationError error = deserializeJson(receiveDoc, recv_Packet);
 
-         if (error)
+    if (error)
 
-           {
-           Serial.print(F("deserializeJson() failed: "));
-           Serial.println(error.c_str());
-           return;
+    {
+      Serial.print(F("deserializeJson() failed: "));
+      Serial.println(error.c_str());
+      return;
     }
 
     String command = receiveDoc["command"];

@@ -31,8 +31,8 @@ substitutions:
 
 uart:
   id: uart_bus
-  tx_pin: D6
-  rx_pin: D5
+  tx_pin: D5
+  rx_pin: D6
   baud_rate: 9600
 
 output:
