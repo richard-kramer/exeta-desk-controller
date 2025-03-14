@@ -35,10 +35,17 @@ desolder anything**.
 
 ### Software installation
 
-Copy the files from [`esphome`](esphome/) into your homeassistant `/config/esphome` directory. The configuration uses
-the keys `wifi_ssid` and `wifi_password`, so make sure to add them to your `secrets.yaml`.
+Copy the [`esphome/desk.yaml`](./esphome/desk.yaml) into your homeassistant `/config/esphome` directory. The
+configuration uses the keys `wifi_ssid` and `wifi_password`, so make sure to add them to your `secrets.yaml`.
 
 Install the code via esphome in your Homeassistant instance and import the device.
+
+#### External Component
+
+By default, the external component gets included from GitHub, so you don't need any more files. If you want to save the
+component definition locally and/or modify it, you have to also download [`esphome/components/`](./esphome/components/)
+and put it into your esphome directory. The use the local `external_components` source instead of the github one in your
+`desk.yaml`.
 
 ## Remote Control
 
@@ -50,8 +57,8 @@ to the **exact** height. I tried to mitigate this a bit by stopping early, but b
 only lands approximately at the target position.
 
 Also, the **STOP** button of the cover really only works, if the desk moves by controlling it via the cover or number
-input. When pressing one of the position memory keys the only way to stop the desk is by pressing on of those again. The
-actual controller does not have a dedicated **STOP** button, so there is nothing that could be pressed, but only to
+input. When pressing one of the position memory keys the only way to stop the desk is by pressing on one of those again.
+The actual controller does not have a dedicated **STOP** button, so there is nothing that could be pressed, but only to
 release while emulating a press on Up/Down.
 
 There may be edge cases, where pressing buttons while the desk is performing another task might result in unexpected

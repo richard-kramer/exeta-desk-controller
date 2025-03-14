@@ -1,7 +1,10 @@
 esphome:
   name: desk
-  includes:
-    - deskcontrol/ExetaDeskState.h
+
+external_components:
+  # - source: components # use this instead of the source below if you want to use the local component definition
+  - source: github://richard-kramer/exeta-desk-controller
+    components: [exeta_desk_state]
 
 esp8266:
   board: d1_mini
@@ -53,19 +56,6 @@ output:
     id: gpio_d4
     inverted: true
 
-globals:
-  - id: desk_height
-    type: float
-    restore_value: true
-    initial_value: '62'
-
-custom_component:
-  - id: uart_state
-    lambda: |-
-      auto state_sensor = new ExetaDeskState(id(uart_bus));
-      App.register_component(state_sensor);
-      return {state_sensor};
-
 script:
   - id: unset_all
     then:
@@ -74,10 +64,8 @@ script:
       - output.turn_off: gpio_d3
       - output.turn_off: gpio_d4
 
-sensor:
-  - platform: template
-    lambda: !lambda |-
-      return id(desk_height);
+exeta_desk_state:
+  height:
     name: desk_height
     id: height_sensor
     unit_of_measurement: cm
@@ -91,9 +79,17 @@ sensor:
         - cover.template.publish:
             id: desk_cover
             position: !lambda |-
+              // The sensor outputs values from min_height (cm) to max_height (cm)
+              // We need to translate this to 0 - 1 scale.
               float position = (float(x) - float(${min_height})) / (float(${max_height}) - float(${min_height}));
               return position;
         - component.update: height_input
+  lock:
+    id: lock_sensor
+
+# only needed, because the custom exeta_desk_state component initializes a sensor and binary_sensor internally and it wouldn't build otherwise
+sensor: []
+binary_sensor: []
 
 cover:
   - platform: template
@@ -158,6 +154,7 @@ number:
     name: desk_height
     id: height_input
     unit_of_measurement: cm
+    icon: mdi:arrow-expand-vertical
     mode: box
     step: 0.1
     min_value: ${min_height}
@@ -189,7 +186,11 @@ lock:
     entity_category: config
     id: input_lock
     lambda: |-
-      return {};
+      if (id(lock_sensor).state) {
+        return LOCK_STATE_LOCKED;
+      } else {
+        return LOCK_STATE_UNLOCKED;
+      }
     unlock_action:
       - lock.template.publish:
           id: input_lock
