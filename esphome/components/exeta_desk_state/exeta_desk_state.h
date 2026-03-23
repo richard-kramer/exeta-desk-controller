@@ -1,5 +1,7 @@
 #pragma once
 
+#include <deque>
+
 #include "esphome/components/binary_sensor/binary_sensor.h"
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/uart/uart.h"

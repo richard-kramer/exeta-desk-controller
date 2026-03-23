@@ -48,11 +48,19 @@ output:
     id: gpio_d2
     inverted: true
   - platform: gpio
-    pin: D3
+    pin:
+      number: D3
+      mode:
+        output: true
+        open_drain: true
     id: gpio_d3
     inverted: true
   - platform: gpio
-    pin: D4
+    pin:
+      number: D4
+      mode:
+        output: true
+        open_drain: true
     id: gpio_d4
     inverted: true
 
